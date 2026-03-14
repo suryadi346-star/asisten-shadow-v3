@@ -1,0 +1,17 @@
+# Asisten Shadow v3.0 - Dependencies
+
+# Core dependencies
+cryptography>=41.0.0    # AES-256 encryption
+rich>=13.7.0           # Beautiful terminal UI
+
+# Optional but recommended
+python-dateutil>=2.8.2
+
+# Testing (development)
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Code quality (development)
+black>=23.7.0
+flake8>=6.1.0
+mypy>=1.5.1
