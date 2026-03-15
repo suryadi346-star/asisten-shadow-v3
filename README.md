@@ -1,5 +1,3 @@
-# asisten-shadow-v3
-
 # 🔥 Asisten Shadow v3.0
 
 <div align="center">
@@ -285,11 +283,11 @@ asisten-shadow-v3/
 │   │   ├── user_manager.py   # User auth
 │   │   └── notes_manager.py  # Notes CRUD
 │   ├── terminal/
-│   │   └── ui.py            # Rich terminal UI
-│   ├── config.py            # Configuration
-│   └── main.py              # Entry point
-├── data/                    # SQLite database
-├── tests/                   # Unit tests
+│   │   └── ui.py             # Rich terminal UI
+│   ├── config.py             # Configuration
+│   └── main.py               # Entry point
+├── data/                     # SQLite database
+├── tests/                    # Unit tests
 └── requirements.txt
 ```
 

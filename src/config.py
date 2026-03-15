@@ -8,7 +8,7 @@ from pathlib import Path
 
 # ==================== APP INFO ====================
 APP_NAME = "Asisten Shadow"
-VERSION = "3.0.0"
+VERSION = "3.0.2"
 AUTHOR = "Asisten Shadow Team"
 DESCRIPTION = "Multi-platform encrypted note-taking app"
 GITHUB_URL = "https://github.com/suryadi346-star/asisten-shadow-v3"
@@ -186,7 +186,7 @@ MESSAGES = {
     "note_deleted": "✓ Catatan berhasil dihapus",
     "export_success": "✓ Export berhasil ke {filename}",
     "backup_success": "✓ Backup berhasil dibuat",
-
+    
     # Errors
     "login_failed": "✗ Username atau password salah",
     "username_exists": "✗ Username sudah digunakan",
@@ -196,12 +196,12 @@ MESSAGES = {
     "permission_denied": "✗ Anda tidak memiliki akses",
     "encryption_failed": "✗ Gagal mengenkripsi data",
     "decryption_failed": "✗ Gagal mendekripsi data",
-
+    
     # Warnings
     "session_expired": "⚠ Sesi Anda telah berakhir, silakan login kembali",
     "weak_password": "⚠ Password Anda lemah, gunakan kombinasi huruf, angka, dan simbol",
     "backup_recommended": "⚠ Backup terakhir {days} hari yang lalu, backup sekarang?",
-
+    
     # Info
     "no_notes": "ℹ Belum ada catatan, buat catatan pertama Anda!",
     "searching": "ℹ Mencari catatan...",

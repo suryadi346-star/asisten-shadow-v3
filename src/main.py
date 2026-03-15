@@ -191,14 +191,21 @@ class AsistenShadow:
         if not title:
             return
         
-        UI.info("Tulis catatan (ketik '---END---' di baris baru untuk selesai)")
+        UI.info("Tulis catatan (ketik '---END---' atau 'END' di baris baru untuk selesai)")
+        UI.info("Atau tekan Ctrl+D (Linux/Mac) / Ctrl+Z+Enter (Windows)")
         
         content_lines = []
         while True:
-            line = input()
-            if line.strip() == "---END---":
+            try:
+                line = input()
+                # Check for END markers (case-insensitive, flexible)
+                line_stripped = line.strip().upper()
+                if line_stripped in ["---END---", "END", "--END--", "===END==="]:
+                    break
+                content_lines.append(line)
+            except EOFError:
+                # Ctrl+D or Ctrl+Z pressed
                 break
-            content_lines.append(line)
         
         content = "\n".join(content_lines)
         
@@ -389,18 +396,26 @@ class AsistenShadow:
         UI.info("Edit judul (kosongkan untuk tidak mengubah)")
         new_title = UI.prompt("Judul baru", default=note['title'])
         
-        UI.info("Edit content (ketik '---END---' untuk selesai, atau '---SKIP---' untuk tidak mengubah)")
+        UI.info("Edit content (ketik 'END' atau '---SKIP---' untuk batal)")
+        UI.info("Ctrl+D (Linux/Mac) / Ctrl+Z+Enter (Windows) juga bisa")
         UI.print(f"Content saat ini:\n{note['content'][:200]}...\n")
         
         content_lines = []
         while True:
-            line = input()
-            if line.strip() == "---END---":
+            try:
+                line = input()
+                line_stripped = line.strip().upper()
+                # Check for END
+                if line_stripped in ["---END---", "END", "--END--", "===END==="]:
+                    break
+                # Check for SKIP
+                if line_stripped in ["---SKIP---", "SKIP", "--SKIP--"]:
+                    content_lines = None
+                    break
+                content_lines.append(line)
+            except EOFError:
+                # Ctrl+D or Ctrl+Z pressed
                 break
-            if line.strip() == "---SKIP---":
-                content_lines = None
-                break
-            content_lines.append(line)
         
         new_content = "\n".join(content_lines) if content_lines else None
         
