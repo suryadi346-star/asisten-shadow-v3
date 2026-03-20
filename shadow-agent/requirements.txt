@@ -1,0 +1,20 @@
+# Shadow Agent — Dependencies
+# Semua ringan, cocok untuk Termux RAM 3GB
+
+# Core AI Providers
+anthropic>=0.30.0
+openai>=1.35.0
+
+# Web Framework (ringan, production-grade)
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+
+# Terminal UI
+rich>=13.7.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Optional: typing support
+pydantic>=2.7.0

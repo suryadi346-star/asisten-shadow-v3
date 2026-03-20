@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadow Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080c10;
+    --bg2:      #0d1318;
+    --bg3:      #111820;
+    --border:   #1e2d3d;
+    --accent:   #00d4ff;
+    --accent2:  #00ff9d;
+    --warn:     #ffaa00;
+    --danger:   #ff4444;
+    --text:     #c8d8e8;
+    --dim:      #4a6070;
+    --mono:     'JetBrains Mono', monospace;
+    --sans:     'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,212,255,0.015) 2px,
+      rgba(0,212,255,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ─── Layout ─────────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: 48px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ─── Header ─────────────────────────── */
+  header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--dim); font-weight: 400; font-size: 11px; margin-left: 8px; }
+
+  .header-status {
+    margin-left: auto;
+    display: flex;
+    gap: 12px;
+  }
+
+  .provider-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--dim);
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .provider-badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--dim);
+  }
+  .provider-badge.ok .dot   { background: var(--accent2); box-shadow: 0 0 4px var(--accent2); }
+  .provider-badge.fail .dot { background: var(--danger); }
+
+  /* ─── Sidebar ────────────────────────── */
+  nav {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-section {
+    padding: 8px 16px 4px;
+    font-size: 10px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    color: var(--dim);
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    font-size: 12px;
+  }
+  .nav-item:hover { color: var(--text); background: var(--bg3); }
+  .nav-item.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(0,212,255,0.04);
+  }
+  .nav-item .icon { font-size: 14px; width: 18px; text-align: center; }
+
+  /* ─── Main ───────────────────────────── */
+  main {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ─── Panels / Cards ─────────────────── */
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-body { padding: 16px; }
+
+  /* ─── Inputs ─────────────────────────── */
+  textarea, input, select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    border-radius: 3px;
+    padding: 8px 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea:focus, input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(0,212,255,0.15);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  select { cursor: pointer; }
+  label {
+    display: block;
+    font-size: 11px;
+    color: var(--dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .field { margin-bottom: 12px; }
+
+  /* ─── Buttons ────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+    background: transparent;
+  }
+  .btn-primary {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-primary:hover {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: 0 0 12px rgba(0,212,255,0.3);
+  }
+  .btn-success {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+  .btn-success:hover {
+    background: var(--accent2);
+    color: var(--bg);
+    box-shadow: 0 0 12px rgba(0,255,157,0.3);
+  }
+  .btn-ghost {
+    border-color: var(--border);
+    color: var(--dim);
+  }
+  .btn-ghost:hover { border-color: var(--dim); color: var(--text); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ─── Agent Selector ─────────────────── */
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .agent-card {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    background: var(--bg3);
+  }
+  .agent-card:hover { border-color: var(--accent); }
+  .agent-card.selected {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.06);
+    box-shadow: 0 0 8px rgba(0,212,255,0.1);
+  }
+  .agent-card .agent-icon { font-size: 20px; margin-bottom: 4px; }
+  .agent-card .agent-name {
+    font-size: 10px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .agent-card.selected .agent-name { color: var(--accent); }
+
+  /* ─── Progress Stream ────────────────── */
+  #progress-feed {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 12px;
+    min-height: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 12px;
+    display: none;
+  }
+  #progress-feed.active { display: block; }
+
+  .log-line {
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(30,45,61,0.5);
+    display: flex;
+    gap: 8px;
+  }
+  .log-time { color: var(--dim); min-width: 55px; }
+  .log-phase { min-width: 70px; font-weight: 600; }
+  .log-phase.planning  { color: var(--warn); }
+  .log-phase.executing { color: var(--accent); }
+  .log-phase.done      { color: var(--accent2); }
+  .log-phase.failed    { color: var(--danger); }
+  .log-phase.init      { color: var(--dim); }
+  .log-msg { color: var(--text); flex: 1; }
+
+  /* ─── Result Blocks ──────────────────── */
+  .result-block {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-top: 8px;
+    overflow: hidden;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } }
+
+  .result-header {
+    padding: 8px 12px;
+    background: var(--bg3);
+    font-size: 11px;
+    color: var(--dim);
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .result-header .step-label { color: var(--accent); font-weight: 600; }
+  .result-content {
+    padding: 12px;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    font-size: 12px;
+    color: var(--text);
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  /* ─── Sessions Table ─────────────────── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .data-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 10px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(30,45,61,0.5);
+  }
+  .data-table tr:hover td { background: var(--bg3); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .badge-active  { background: rgba(255,170,0,0.15); color: var(--warn); }
+  .badge-done    { background: rgba(0,255,157,0.12); color: var(--accent2); }
+  .badge-failed  { background: rgba(255,68,68,0.12); color: var(--danger); }
+  .badge-anthropic { background: rgba(0,212,255,0.1); color: var(--accent); }
+  .badge-openai    { background: rgba(0,255,157,0.1); color: var(--accent2); }
+
+  /* ─── Stats Cards ────────────────────── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .stat-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 14px;
+  }
+  .stat-label { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-value { font-family: var(--sans); font-size: 28px; font-weight: 800; color: var(--accent); margin-top: 4px; }
+  .stat-sub   { font-size: 11px; color: var(--dim); margin-top: 2px; }
+
+  /* ─── Page switching ─────────────────── */
+  .page { display: none; }
+  .page.active { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ─── Tabs ───────────────────────────── */
+  .tab-group { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .tab {
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--dim);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ─── Spinner ────────────────────────── */
+  .spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── Mobile ─────────────────────────── */
+  @media (max-width: 640px) {
+    .layout { grid-template-columns: 1fr; }
+    nav { display: flex; flex-direction: row; overflow-x: auto; padding: 0; border-right: none; border-bottom: 1px solid var(--border); }
+    .nav-section { display: none; }
+    .nav-item { padding: 12px 16px; border-left: none; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .nav-item.active { border-bottom-color: var(--accent); border-left: none; }
+    .agent-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Header -->
+  <header>
+    <div class="logo">◆ Shadow Agent <span>v1.0.0</span></div>
+    <div class="header-status">
+      <div class="provider-badge" id="badge-anthropic">
+        <div class="dot"></div> Anthropic
+      </div>
+      <div class="provider-badge" id="badge-openai">
+        <div class="dot"></div> OpenAI
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <nav>
+    <div class="nav-section">Operations</div>
+    <div class="nav-item active" onclick="showPage('pipeline')">
+      <span class="icon">⟳</span> Pipeline
+    </div>
+    <div class="nav-item" onclick="showPage('single')">
+      <span class="icon">▶</span> Single Agent
+    </div>
+    <div class="nav-section">Data</div>
+    <div class="nav-item" onclick="showPage('sessions'); loadSessions()">
+      <span class="icon">◉</span> Sessions
+    </div>
+    <div class="nav-item" onclick="showPage('stats'); loadStats()">
+      <span class="icon">◈</span> Stats
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main>
+
+    <!-- ── Page: Pipeline ── -->
+    <div class="page active" id="page-pipeline">
+      <div class="panel">
+        <div class="panel-header">⟳ Goal Pipeline</div>
+        <div class="panel-body">
+          <div class="field">
+            <label>Goal</label>
+            <textarea id="goal-input" rows="3" placeholder="e.g. Research and write a technical blog post about WebAssembly performance in 2025"></textarea>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px" class="field">
+            <div>
+              <label>Provider Override</label>
+              <select id="pipeline-provider">
+                <option value="">Auto (per-agent config)</option>
+                <option value="anthropic">Force Anthropic</option>
+                <option value="openai">Force OpenAI</option>
+              </select>
+            </div>
+            <div>
+              <label>Session Name</label>
+              <input type="text" id="session-name" placeholder="Optional label">
+            </div>
+          </div>
+          <button class="btn btn-primary" id="run-pipeline-btn" onclick="runPipeline()">
+            ▶ Run Pipeline
+          </button>
+        </div>
+      </div>
+
+      <!-- Progress feed -->
+      <div id="progress-feed"></div>
+
+      <!-- Results -->
+      <div id="pipeline-results"></div>
+    </div>
+
+    <!-- ── Page: Single Agent ── -->
+    <div class="page" id="page-single">
+      <div class="panel">
+        <div class="panel-header">▶ Single Agent Run</div>
+        <div class="panel-body">
+          <div class="field">
+            <label>Select Agent</label>
+            <div class="agent-grid">
+              <div class="agent-card selected" onclick="selectAgent(this,'planner')">
+                <div class="agent-icon">🗺</div>
+                <div class="agent-name">Planner</div>
+              </div>
+              <div class="agent-card" onclick="selectAgent(this,'researcher')">
+                <div class="agent-icon">🔍</div>
+                <div class="agent-name">Researcher</div>
+              </div>
+              <div class="agent-card" onclick="selectAgent(this,'writer')">
+                <div class="agent-icon">✍</div>
+                <div class="agent-name">Writer</div>
+              </div>
+              <div class="agent-card" onclick="selectAgent(this,'coder')">
+                <div class="agent-icon">⌨</div>
+                <div class="agent-name">Coder</div>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Prompt</label>
+            <textarea id="single-prompt" rows="4" placeholder="Your prompt here..."></textarea>
+          </div>
+          <div class="field">
+            <label>Provider</label>
+            <select id="single-provider">
+              <option value="">Agent default</option>
+              <option value="anthropic">Anthropic</option>
+              <option value="openai">OpenAI</option>
+            </select>
+          </div>
+          <button class="btn btn-success" id="run-single-btn" onclick="runSingle()">
+            ▶ Run Agent
+          </button>
+        </div>
+      </div>
+      <div id="single-result"></div>
+    </div>
+
+    <!-- ── Page: Sessions ── -->
+    <div class="page" id="page-sessions">
+      <div class="panel">
+        <div class="panel-header">◉ Sessions</div>
+        <div class="panel-body" style="padding:0">
+          <table class="data-table" id="sessions-table">
+            <thead>
+              <tr>
+                <th>ID</th><th>Name</th><th>Goal</th>
+                <th>Status</th><th>Created</th>
+              </tr>
+            </thead>
+            <tbody id="sessions-body">
+              <tr><td colspan="5" style="text-align:center; color:var(--dim); padding:24px">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Page: Stats ── -->
+    <div class="page" id="page-stats">
+      <div id="stats-summary" class="stats-grid"></div>
+      <div class="panel">
+        <div class="panel-header">◈ Provider Usage</div>
+        <div class="panel-body" style="padding:0">
+          <table class="data-table">
+            <thead>
+              <tr><th>Date</th><th>Provider</th><th>Model</th><th>Calls</th><th>Tokens In</th><th>Tokens Out</th><th>Errors</th></tr>
+            </thead>
+            <tbody id="stats-body">
+              <tr><td colspan="7" style="text-align:center; color:var(--dim); padding:24px">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API = '';  // same origin
+let selectedAgent = 'planner';
+
+// ─── Navigation ─────────────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ─── Provider Status ─────────────────────────────────────────────────────────
+async function loadProviderStatus() {
+  try {
+    const r = await fetch(API + '/api/providers');
+    const data = await r.json();
+    for (const [provider, info] of Object.entries(data)) {
+      const badge = document.getElementById('badge-' + provider);
+      if (badge) {
+        badge.classList.toggle('ok', info.ok);
+        badge.classList.toggle('fail', !info.ok);
+      }
+    }
+  } catch(e) {}
+}
+
+// ─── Agent Selector ───────────────────────────────────────────────────────────
+function selectAgent(el, type) {
+  document.querySelectorAll('.agent-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAgent = type;
+}
+
+// ─── Log helpers ──────────────────────────────────────────────────────────────
+function logLine(phase, msg) {
+  const feed = document.getElementById('progress-feed');
+  feed.classList.add('active');
+  const t = new Date().toLocaleTimeString('en', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  div.innerHTML = `
+    <span class="log-time">${t}</span>
+    <span class="log-phase ${phase}">${phase.toUpperCase()}</span>
+    <span class="log-msg">${msg}</span>
+  `;
+  feed.appendChild(div);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function clearLog() {
+  const feed = document.getElementById('progress-feed');
+  feed.innerHTML = '';
+  feed.classList.remove('active');
+}
+
+// ─── Pipeline ─────────────────────────────────────────────────────────────────
+async function runPipeline() {
+  const goal = document.getElementById('goal-input').value.trim();
+  if (!goal) { alert('Enter a goal.'); return; }
+
+  const provider = document.getElementById('pipeline-provider').value;
+  const sessionName = document.getElementById('session-name').value.trim();
+
+  const btn = document.getElementById('run-pipeline-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+
+  clearLog();
+  document.getElementById('pipeline-results').innerHTML = '';
+  logLine('init', `Goal: ${goal.slice(0, 80)}...`);
+
+  try {
+    const es = new EventSource(API + '/api/run/goal/stream?' + new URLSearchParams({
+      // SSE via GET — we'll POST via fetch instead
+    }));
+
+    // SSE doesn't support POST body, so use fetch stream
+    const response = await fetch(API + '/api/run/goal/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal, provider: provider || null, session_name: sessionName || null })
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') break;
+
+        try {
+          const info = JSON.parse(data);
+          handleProgress(info);
+        } catch(e) {}
+      }
+    }
+  } catch(e) {
+    logLine('failed', e.message);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '▶ Run Pipeline';
+}
+
+function handleProgress(info) {
+  const phase = info.phase || '';
+
+  if (phase === 'init') {
+    logLine('init', `Session ${info.session_id.slice(0,8)}`);
+  } else if (phase === 'planning') {
+    logLine('planning', info.message || '');
+  } else if (phase === 'executing') {
+    logLine('executing', `Step ${info.step} [${info.agent}] — ${(info.task||'').slice(0,60)}`);
+  } else if (phase === 'step_done') {
+    logLine('done', `Step ${info.step} ✓ — ${(info.preview||'').slice(0,60)}`);
+  } else if (phase === 'step_failed') {
+    logLine('failed', `Step ${info.step} ✗ — ${info.error||''}`);
+  } else if (phase === 'complete') {
+    logLine('done', `Complete! ${info.steps_done}/${info.steps_total} steps • ${info.total_tokens} tokens`);
+  } else if (phase === 'final_result') {
+    renderResults(info);
+  }
+}
+
+function renderResults(data) {
+  const container = document.getElementById('pipeline-results');
+  if (!data.results || !data.results.length) return;
+
+  container.innerHTML = '';
+  for (const r of data.results) {
+    if (!r.success || !r.result) continue;
+    const block = document.createElement('div');
+    block.className = 'result-block';
+    block.innerHTML = `
+      <div class="result-header">
+        <span class="step-label">Step ${r.step} — ${r.agent.toUpperCase()}</span>
+        <span>
+          <span class="badge badge-${r.provider}">${r.provider}</span>
+          ${r.model}
+          · ${r.tokens?.out || 0} tokens out
+        </span>
+      </div>
+      <div class="result-content">${escapeHtml(r.result)}</div>
+    `;
+    container.appendChild(block);
+  }
+}
+
+// ─── Single Agent ─────────────────────────────────────────────────────────────
+async function runSingle() {
+  const prompt = document.getElementById('single-prompt').value.trim();
+  if (!prompt) { alert('Enter a prompt.'); return; }
+
+  const provider = document.getElementById('single-provider').value;
+  const btn = document.getElementById('run-single-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+  document.getElementById('single-result').innerHTML = '';
+
+  try {
+    const r = await fetch(API + '/api/run/agent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agent_type: selectedAgent,
+        prompt,
+        provider: provider || null,
+      })
+    });
+    const data = await r.json();
+
+    const container = document.getElementById('single-result');
+    if (data.success) {
+      container.innerHTML = `
+        <div class="result-block">
+          <div class="result-header">
+            <span class="step-label">${selectedAgent.toUpperCase()} Result</span>
+            <span>
+              <span class="badge badge-${data.provider}">${data.provider}</span>
+              ${data.model}
+              · ${data.tokens?.out || 0} tokens out
+            </span>
+          </div>
+          <div class="result-content">${escapeHtml(data.result)}</div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `<div style="color:var(--danger); padding:12px">✗ ${data.error}</div>`;
+    }
+  } catch(e) {
+    document.getElementById('single-result').innerHTML =
+      `<div style="color:var(--danger); padding:12px">✗ ${e.message}</div>`;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '▶ Run Agent';
+}
+
+// ─── Sessions ─────────────────────────────────────────────────────────────────
+async function loadSessions() {
+  const tbody = document.getElementById('sessions-body');
+  try {
+    const r = await fetch(API + '/api/sessions');
+    const sessions = await r.json();
+    if (!sessions.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:24px">No sessions yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = sessions.map(s => `
+      <tr>
+        <td style="font-family:var(--mono);color:var(--dim)">${s.id.slice(0,8)}…</td>
+        <td>${escapeHtml(s.name.slice(0,40))}</td>
+        <td style="color:var(--dim)">${escapeHtml(s.goal.slice(0,50))}…</td>
+        <td><span class="badge badge-${s.status}">${s.status}</span></td>
+        <td style="color:var(--dim)">${s.created_at.slice(0,16)}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger);padding:12px">Error: ${e.message}</td></tr>`;
+  }
+}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch(API + '/api/stats');
+    const stats = await r.json();
+
+    const totalCalls   = stats.reduce((s, r) => s + r.calls, 0);
+    const totalTokensIn  = stats.reduce((s, r) => s + r.tokens_in, 0);
+    const totalTokensOut = stats.reduce((s, r) => s + r.tokens_out, 0);
+    const totalErrors  = stats.reduce((s, r) => s + r.errors, 0);
+
+    document.getElementById('stats-summary').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Total Calls</div>
+        <div class="stat-value">${totalCalls}</div>
+        <div class="stat-sub">API requests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tokens In</div>
+        <div class="stat-value" style="color:var(--warn)">${(totalTokensIn/1000).toFixed(1)}K</div>
+        <div class="stat-sub">Input tokens</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tokens Out</div>
+        <div class="stat-value" style="color:var(--accent2)">${(totalTokensOut/1000).toFixed(1)}K</div>
+        <div class="stat-sub">Output tokens</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Errors</div>
+        <div class="stat-value" style="color:${totalErrors > 0 ? 'var(--danger)' : 'var(--dim)'}">${totalErrors}</div>
+        <div class="stat-sub">Failed calls</div>
+      </div>
+    `;
+
+    const tbody = document.getElementById('stats-body');
+    if (!stats.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--dim);padding:24px">No data yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = stats.map(s => `
+      <tr>
+        <td>${s.date}</td>
+        <td><span class="badge badge-${s.provider}">${s.provider.toUpperCase()}</span></td>
+        <td style="color:var(--dim)">${s.model}</td>
+        <td>${s.calls}</td>
+        <td>${s.tokens_in.toLocaleString()}</td>
+        <td>${s.tokens_out.toLocaleString()}</td>
+        <td style="color:${s.errors > 0 ? 'var(--danger)' : 'var(--dim)'}">${s.errors}</td>
+      </tr>
+    `).join('');
+  } catch(e) {}
+}
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+loadProviderStatus();
+setInterval(loadProviderStatus, 30000);
+</script>
+</body>
+</html>
