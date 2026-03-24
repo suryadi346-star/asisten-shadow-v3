@@ -122,5 +122,5 @@ def get_password_with_dots(prompt_text: str = "Password: ") -> str:
 # Simple test
 if __name__ == "__main__":
     pwd = get_password_with_dots("Enter password: ")
-    print(f"\nYou entered: {pwd}")
+    print("\nPassword received.")
     print(f"Length: {len(pwd)} characters")
