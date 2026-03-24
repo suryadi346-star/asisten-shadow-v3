@@ -87,7 +87,11 @@ class Orchestrator:
             except ValueError as e:
                 # Agent type tidak dikenal → skip
                 logger.warning(f"Unknown agent '{agent_type}' at step {step_num}: {e}")
-                result = {"success": False, "error": str(e), "result": ""}
+                result = {
+                    "success": False,
+                    "error": f"Unknown agent '{agent_type}' at step {step_num}'",
+                    "result": "",
+                }
 
             result["step"] = step_num
             result["expected_output"] = expected
