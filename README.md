@@ -191,7 +191,7 @@ python main.py
 ```
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║     📝  ASISTEN SHADOW v3.0.0                             ║
+║     📝  ASISTEN SHADOW v3.0.2                             ║
 ║                                                           ║
 ║     Aplikasi Catatan Terenkripsi                          ║
 ║     Multi-platform • Secure • User-friendly               ║
@@ -283,7 +283,8 @@ asisten-shadow-v3/
 │   │   ├── user_manager.py   # User auth
 │   │   └── notes_manager.py  # Notes CRUD
 │   ├── terminal/
-│   │   └── ui.py             # Rich terminal UI
+│   │   ├── ui.py             # Rich terminal UI
+│   │   └── vm_mode.py
 │   ├── config.py             # Configuration
 │   └── main.py               # Entry point
 ├── data/                     # SQLite database
